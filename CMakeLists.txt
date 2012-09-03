@@ -1,0 +1,5 @@
+cmake_minimum_required (VERSION 2.6)
+project (ComputationModelTestF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O3 -Wall -Werror")
+include_directories ("${PROJECT_SOURCE_DIR}/boost")
+add_executable (somef somef.cc)
