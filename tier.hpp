@@ -1,4 +1,5 @@
 #pragma once
+#include <sstream>
 struct Tier
 {
   std::list<double> connectedness;
@@ -57,13 +58,15 @@ struct Xbar
   std::list<Port> top_border_ports;
   std::map<uint32_t, std::list<Port>> child_border_ports;
   uint32_t parent;
+  uint32_t tier;
   std::list<std::pair<Port, Port>> links;
-  std::map<std::string, uint32_t> port_owners;
+  std::map<Port, uint32_t> port_owners;
   
   static std::unique_ptr<Xbar> Parse(ptree const& pt) {
     std::unique_ptr<Xbar> xbar(new Xbar());
     xbar->id = pt.get<uint32_t>("ID");
     xbar->parent = pt.get<uint32_t>("parent");
+    xbar->tier = pt.get<uint32_t>("tier");
     BOOST_FOREACH(const ptree::value_type& p,
                 pt.get_child("children")) {
       xbar->children.emplace_back(p.second.get<uint32_t>(""));
@@ -108,7 +111,12 @@ struct Xbar
 
     BOOST_FOREACH(const ptree::value_type& p,
                   pt.get_child("port_owners")) {
-      xbar->port_owners.insert(std::map<std::string, uint32_t>::value_type(p.first, p.second.get<uint32_t>("")));
+      std::string str = p.first;
+      std::stringstream ss(std::move(str));
+      char sepA, sepB;
+      uint32_t first, second;
+      ss >> sepA >> first >> sepB >> second;
+      xbar->port_owners.insert(std::map<Port, uint32_t>::value_type(Port(first, second), p.second.get<uint32_t>("")));
     }
     return xbar;
   }
@@ -117,7 +125,7 @@ struct Xbar
 struct Topology
 {
   std::list<std::unique_ptr<Tier>> tiers;
-  std::list<std::unique_ptr<Xbar>> xbars;
+  std::map<uint32_t, std::unique_ptr<Xbar>> xbars;
   static std::unique_ptr<Topology> Parse(ptree const& pt) {
     std::unique_ptr<Topology> topology(new Topology());
     BOOST_FOREACH(const ptree::value_type& p,
@@ -126,7 +134,8 @@ struct Topology
     }
     BOOST_FOREACH(const ptree::value_type& p,
                 pt.get_child("data.xbars")) {
-      topology->xbars.emplace_back(Xbar::Parse(p.second));
+      std::unique_ptr<Xbar> xbar = Xbar::Parse(p.second);
+      topology->xbars.insert(std::map<uint32_t, std::unique_ptr<Xbar>>::value_type(xbar->id, std::move(xbar)));
     }
     return topology;
   }
