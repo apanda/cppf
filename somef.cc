@@ -109,6 +109,10 @@ void TieredF (const std::unique_ptr<Xbar>& xbar,
         tables[child].push_back(rule);
       }
     }
+
+    for (const Rule rule: tables[xbar->id]) {
+      tables[child].push_back(rule);
+    }
   }
 
   for (const uint32_t child: xbar->children) {
